@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UTN Formula SAE · Presupuesto 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161b24;
+    --surface2: #1e2535;
+    --border: #2a3348;
+    --text: #e8eaf0;
+    --muted: #7a8499;
+    --accent: #e8342a;
+    --accent2: #f5a623;
+    --elec: #3b82f6;
+    --mec: #10b981;
+    --mat: #f59e0b;
+    --fia: #8b5cf6;
+    --lic: #ec4899;
+    --herr: #06b6d4;
+    --log: #f97316;
+    --p1: #ef4444;
+    --p2: #f97316;
+    --p3: #eab308;
+    --p4: #22c55e;
+    --p5: #3b82f6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, #0d0f14 0%, #1a0a08 50%, #0d0f14 100%);
+    border-bottom: 2px solid var(--accent);
+    padding: 20px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 4px 30px rgba(232,52,42,0.15);
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .logo-box {
+    width: 52px; height: 52px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 900; color: #fff; letter-spacing: -1px;
+  }
+  .header-title h1 { font-size: 20px; font-weight: 800; letter-spacing: 1px; }
+  .header-title p { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-top: 2px; }
+  .header-right { display: flex; gap: 12px; align-items: center; }
+  .currency-toggle {
+    display: flex; background: var(--surface2); border-radius: 8px; overflow: hidden; border: 1px solid var(--border);
+  }
+  .currency-toggle button {
+    padding: 6px 14px; border: none; background: none; color: var(--muted); cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.2s;
+  }
+  .currency-toggle button.active { background: var(--accent); color: #fff; }
+  .date-badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 12px; color: var(--muted); }
+  .fx-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 12px; font-size: 12px;
+  }
+  .fx-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink:0; }
+  .fx-dot.live { background: #10b981; animation: pulse 2s infinite; }
+  .fx-dot.error { background: #ef4444; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ── MAIN LAYOUT ── */
+  .main { max-width: 1300px; margin: 0 auto; padding: 28px 24px; }
+
+  /* ── SECTION TITLES ── */
+  .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── STATS GRID ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px; position: relative; overflow: hidden;
+  }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); }
+  .stat-card.green::before { background: #10b981; }
+  .stat-card.orange::before { background: var(--accent2); }
+  .stat-card.blue::before { background: #3b82f6; }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .stat-value { font-size: 26px; font-weight: 800; line-height: 1; }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  /* ── FUNDING INPUT ── */
+  .funding-panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px 28px; margin-bottom: 28px;
+  }
+  .funding-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .funding-header h2 { font-size: 16px; font-weight: 700; }
+  .progress-pct { font-size: 36px; font-weight: 900; color: var(--accent2); }
+  .funding-input-row { display: flex; gap: 12px; align-items: center; margin-bottom: 18px; }
+  .funding-input-row label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .fund-input {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); padding: 10px 14px; font-size: 16px; font-weight: 600; width: 200px;
+    outline: none; transition: border-color 0.2s;
+  }
+  .fund-input:focus { border-color: var(--accent2); }
+  .fund-currency-label { font-size: 13px; color: var(--muted); }
+  .ars-equiv { font-size: 12px; color: var(--muted); padding: 4px 0; }
+
+  /* ── MAIN PROGRESS BAR ── */
+  .progress-track { background: var(--surface2); border-radius: 99px; height: 28px; overflow: hidden; position: relative; border: 1px solid var(--border); }
+  .progress-fill {
+    height: 100%; border-radius: 99px;
+    background: linear-gradient(90deg, #e8342a, #f5a623);
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative; min-width: 0;
+  }
+  .progress-fill::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    animation: shimmer 2s infinite;
+  }
+  @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+  .milestone-marks { position: relative; display: flex; margin-top: 8px; }
+  .milestone { position: absolute; transform: translateX(-50%); text-align: center; }
+  .milestone-line { width: 1px; height: 6px; background: var(--border); margin: 0 auto 3px; }
+  .milestone-label { font-size: 10px; color: var(--muted); }
+  .milestone.reached .milestone-label { color: var(--accent2); font-weight: 700; }
+
+  /* ── CATEGORY BARS ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 28px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-bottom: 28px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+  }
+  .card h3 { font-size: 14px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  .cat-item { margin-bottom: 14px; }
+  .cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+  .cat-name { font-size: 13px; }
+  .cat-amount { font-size: 13px; font-weight: 600; }
+  .cat-pct { font-size: 11px; color: var(--muted); }
+  .cat-bar-track { background: var(--surface2); border-radius: 99px; height: 7px; }
+  .cat-bar-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+
+  /* ── CHART ── */
+  .chart-container { position: relative; height: 220px; display: flex; align-items: center; justify-content: center; }
+  .chart-legend { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .legend-item { display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
+  .legend-left { display: flex; align-items: center; gap: 8px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .legend-label { color: var(--text); }
+  .legend-value { color: var(--muted); font-weight: 600; }
+
+  /* ── PRIORITY BREAKDOWN ── */
+  .priority-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 28px; }
+  .priority-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px; text-align: center; transition: transform 0.15s;
+  }
+  .priority-card:hover { transform: translateY(-2px); }
+  .priority-badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; margin-bottom: 8px; }
+  .priority-card .p-amount { font-size: 20px; font-weight: 800; margin-bottom: 2px; }
+  .priority-card .p-label { font-size: 11px; color: var(--muted); }
+  .priority-card .p-count { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+  /* ── NEXT TO BUY ── */
+  .next-items { display: flex; flex-direction: column; gap: 8px; }
+  .next-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface2); border-radius: 8px; padding: 10px 14px;
+    border: 1px solid var(--border);
+  }
+  .next-item-left { display: flex; align-items: center; gap: 10px; }
+  .next-item-name { font-size: 13px; font-weight: 500; }
+  .next-item-cat { font-size: 11px; color: var(--muted); }
+  .next-item-price { font-size: 14px; font-weight: 700; color: var(--accent2); }
+
+  /* ── ITEM TABLE ── */
+  .table-controls { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .search-input {
+    flex: 1; min-width: 200px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); padding: 8px 14px; font-size: 13px; outline: none;
+  }
+  .search-input:focus { border-color: var(--accent2); }
+  .filter-btn {
+    padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--muted); cursor: pointer; font-size: 12px;
+    font-weight: 600; transition: all 0.15s; white-space: nowrap;
+  }
+  .filter-btn.active { border-color: var(--accent2); color: var(--accent2); background: rgba(245,166,35,0.1); }
+  .filter-btn:hover { color: var(--text); }
+
+  .items-table { width: 100%; border-collapse: collapse; }
+  .items-table th {
+    text-align: left; padding: 10px 14px; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--border);
+  }
+  .items-table td {
+    padding: 10px 14px; font-size: 13px; border-bottom: 1px solid rgba(42,51,72,0.5);
+    vertical-align: middle;
+  }
+  .items-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .items-table tr.hidden { display: none; }
+  .items-table tr.acquired td { opacity: 0.4; }
+  .items-table tr.acquired td:first-child { opacity: 1; }
+  .items-table tr.no-price td { color: var(--muted); }
+
+  .item-checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent2); }
+  .prio-tag { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 700; }
+  .cat-tag { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 600; color: #fff; }
+  .no-price-tag { font-size: 11px; color: var(--muted); font-style: italic; }
+
+  .p1-tag { background: rgba(239,68,68,0.15); color: #ef4444; }
+  .p2-tag { background: rgba(249,115,22,0.15); color: #f97316; }
+  .p3-tag { background: rgba(234,179,8,0.15); color: #eab308; }
+  .p4-tag { background: rgba(34,197,94,0.15); color: #22c55e; }
+  .p5-tag { background: rgba(59,130,246,0.15); color: #3b82f6; }
+  .pq-tag { background: rgba(122,132,153,0.15); color: #7a8499; }
+
+  .elec-tag { background: rgba(59,130,246,0.2); }
+  .mec-tag { background: rgba(16,185,129,0.2); }
+  .mat-tag { background: rgba(245,158,11,0.2); }
+  .fia-tag { background: rgba(139,92,246,0.2); }
+  .lic-tag { background: rgba(236,72,153,0.2); }
+  .herr-tag { background: rgba(6,182,212,0.2); }
+  .log-tag { background: rgba(249,115,22,0.2); }
+
+  /* ── MILESTONE TOAST ── */
+  .toast {
+    position: fixed; top: 80px; right: 24px; background: var(--surface2);
+    border: 1px solid var(--accent2); border-radius: 12px; padding: 14px 20px;
+    font-size: 14px; font-weight: 600; z-index: 999;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateX(calc(100% + 40px)); transition: transform 0.4s ease;
+  }
+  .toast.show { transform: translateX(0); }
+  .toast-icon { font-size: 20px; margin-right: 8px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .two-col, .three-col { grid-template-columns: 1fr; }
+    .priority-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .header { flex-direction: column; gap: 12px; text-align: center; }
+    .priority-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span class="toast-icon">🏁</span><span id="toastMsg"></span></div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo-box">F</div>
+    <div class="header-title">
+      <h1>UTN FORMULA SAE · BA</h1>
+      <p>Dashboard de Presupuesto 2026</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="currency-toggle">
+      <button onclick="setCurrency('USD')" class="active" id="btnUSD">USD</button>
+      <button onclick="setCurrency('ARS')" id="btnARS">ARS</button>
+    </div>
+    <div class="fx-badge" id="fxBadge" title="Cotización dólar oficial · dolarapi.com">
+      <div class="fx-dot" id="fxDot"></div>
+      <span id="fxLabel" style="color:var(--muted)">Cargando cotización...</span>
+    </div>
+    <div class="date-badge">13 Mar 2026</div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- STATS -->
+  <div class="section-title">Resumen financiero</div>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Presupuesto Total</div>
+      <div class="stat-value" id="statTotal">$54,342</div>
+      <div class="stat-sub" id="statTotalSub">ARS 79,647,879</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Fondos Recibidos</div>
+      <div class="stat-value" id="statReceived" style="color:#10b981">$0</div>
+      <div class="stat-sub" id="statReceivedSub">ARS 0</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-label">Faltante</div>
+      <div class="stat-value" id="statRemaining" style="color:var(--accent2)">$54,342</div>
+      <div class="stat-sub" id="statRemainingSub">ARS 79,647,879</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-label">Items Adquiridos</div>
+      <div class="stat-value" id="statAcquired" style="color:#3b82f6">0 / 47</div>
+      <div class="stat-sub" id="statAcquiredSub">0% de componentes</div>
+    </div>
+  </div>
+
+  <!-- FUNDING PANEL -->
+  <div class="funding-panel">
+    <div class="funding-header">
+      <h2>🏎️ Progreso de Financiamiento</h2>
+      <div class="progress-pct" id="pctDisplay">0%</div>
+    </div>
+    <div class="funding-input-row">
+      <label>Fondos recibidos:</label>
+      <input type="number" class="fund-input" id="fundInput" value="0" min="0" placeholder="0" oninput="updateFunding()">
+      <span class="fund-currency-label" id="fundUnit">USD</span>
+      <span class="ars-equiv" id="arsEquiv"></span>
+    </div>
+    <div class="progress-track" style="margin-bottom: 12px;">
+      <div class="progress-fill" id="mainBar" style="width:0%"></div>
+    </div>
+    <div style="position:relative; height:24px;">
+      <div class="milestone" style="left:25%" id="ms25"><div class="milestone-line"></div><div class="milestone-label">$13,586</div></div>
+      <div class="milestone" style="left:50%" id="ms50"><div class="milestone-line"></div><div class="milestone-label">$27,171</div></div>
+      <div class="milestone" style="left:75%" id="ms75"><div class="milestone-line"></div><div class="milestone-label">$40,757</div></div>
+      <div class="milestone" style="left:100%" id="ms100"><div class="milestone-line"></div><div class="milestone-label">$54,342</div></div>
+    </div>
+    <div style="display:flex; gap:20px; margin-top:16px; flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;">
+        <div style="width:12px;height:12px;border-radius:3px;background:linear-gradient(90deg,#e8342a,#f5a623)"></div>
+        <span style="color:var(--muted)">Fondos recibidos</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;">
+        <div style="width:12px;height:12px;border-radius:3px;background:var(--surface2);border:1px solid var(--border)"></div>
+        <span style="color:var(--muted)">Fondos pendientes</span>
+      </div>
+      <div style="margin-left:auto;font-size:12px;color:var(--muted)">Tipo de cambio: <strong style="color:var(--text)" data-fx-label>1 USD = ARS 1,465</strong></div>
+    </div>
+  </div>
+
+  <!-- CATEGORY BREAKDOWN + DONUT -->
+  <div class="section-title">Desglose por categoría</div>
+  <div class="two-col" style="margin-bottom:28px;">
+    <div class="card">
+      <h3>Categorías principales</h3>
+      <div class="cat-item">
+        <div class="cat-header">
+          <span class="cat-name"><span class="dot" style="background:#3b82f6;display:inline-block;margin-right:6px;vertical-align:middle;"></span>Auto</span>
+          <span><span class="cat-amount" id="cAutoAmt">$44,005</span> <span class="cat-pct">(81%)</span></span>
+        </div>
+        <div class="cat-bar-track"><div class="cat-bar-fill" style="width:81%;background:#3b82f6" id="cAutoBar"></div></div>
+      </div>
+      <div class="cat-item">
+        <div class="cat-header">
+          <span class="cat-name"><span class="dot" style="background:#f97316;display:inline-block;margin-right:6px;vertical-align:middle;"></span>Logística</span>
+          <span><span class="cat-amount" id="cLogAmt">$6,960</span> <span class="cat-pct">(13%)</span></span>
+        </div>
+        <div class="cat-bar-track"><div class="cat-bar-fill" style="width:13%;background:#f97316" id="cLogBar"></div></div>
+      </div>
+      <div class="cat-item">
+        <div class="cat-header">
+          <span class="cat-name"><span class="dot" style="background:#06b6d4;display:inline-block;margin-right:6px;vertical-align:middle;"></span>Herramientas e insumos</span>
+          <span><span class="cat-amount" id="cHerrAmt">$3,377</span> <span class="cat-pct">(6%)</span></span>
+        </div>
+        <div class="cat-bar-track"><div class="cat-bar-fill" style="width:6%;background:#06b6d4" id="cHerrBar"></div></div>
+      </div>
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
+        <h3 style="margin-bottom:12px;">Subcategorías del auto</h3>
+        <div class="cat-item">
+          <div class="cat-header">
+            <span class="cat-name"><span class="dot" style="background:var(--elec);display:inline-block;margin-right:6px;vertical-align:middle;"></span>Eléctrico</span>
+            <span><span class="cat-amount" id="sElecAmt">$17,600</span> <span class="cat-pct">(40%)</span></span>
+          </div>
+          <div class="cat-bar-track"><div class="cat-bar-fill" style="width:40%;background:var(--elec)"></div></div>
+        </div>
+        <div class="cat-item">
+          <div class="cat-header">
+            <span class="cat-name"><span class="dot" style="background:var(--fia);display:inline-block;margin-right:6px;vertical-align:middle;"></span>FIA / Equipamiento</span>
+            <span><span class="cat-amount" id="sFiaAmt">$13,395</span> <span class="cat-pct">(30%)</span></span>
+          </div>
+          <div class="cat-bar-track"><div class="cat-bar-fill" style="width:30%;background:var(--fia)"></div></div>
+        </div>
+        <div class="cat-item">
+          <div class="cat-header">
+            <span class="cat-name"><span class="dot" style="background:var(--mec);display:inline-block;margin-right:6px;vertical-align:middle;"></span>Mecánico</span>
+            <span><span class="cat-amount" id="sMecAmt">$10,850</span> <span class="cat-pct">(25%)</span></span>
+          </div>
+          <div class="cat-bar-track"><div class="cat-bar-fill" style="width:25%;background:var(--mec)"></div></div>
+        </div>
+        <div class="cat-item">
+          <div class="cat-header">
+            <span class="cat-name"><span class="dot" style="background:var(--mat);display:inline-block;margin-right:6px;vertical-align:middle;"></span>Materias Primas</span>
+            <span><span class="cat-amount" id="sMatAmt">$1,160</span> <span class="cat-pct">(3%)</span></span>
+          </div>
+          <div class="cat-bar-track"><div class="cat-bar-fill" style="width:3%;background:var(--mat)"></div></div>
+        </div>
+        <div class="cat-item">
+          <div class="cat-header">
+            <span class="cat-name"><span class="dot" style="background:var(--lic);display:inline-block;margin-right:6px;vertical-align:middle;"></span>Licencias</span>
+            <span><span class="cat-amount" id="sLicAmt">$1,000</span> <span class="cat-pct">(2%)</span></span>
+          </div>
+          <div class="cat-bar-track"><div class="cat-bar-fill" style="width:2%;background:var(--lic)"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Distribución del presupuesto</h3>
+      <div class="chart-container">
+        <canvas id="donutChart"></canvas>
+      </div>
+      <div class="chart-legend" id="donutLegend"></div>
+    </div>
+  </div>
+
+  <!-- PRIORITY BREAKDOWN -->
+  <div class="section-title">Por prioridad</div>
+  <div class="priority-grid" style="margin-bottom:28px;">
+    <div class="priority-card">
+      <div class="priority-badge p1-tag">P1 · CRÍTICO</div>
+      <div class="p-amount" id="p1amt">$17,160</div>
+      <div class="p-label">USD presupuestados</div>
+      <div class="p-count">7 items con precio</div>
+    </div>
+    <div class="priority-card">
+      <div class="priority-badge p2-tag">P2 · ALTO</div>
+      <div class="p-amount" id="p2amt">$9,180</div>
+      <div class="p-label">USD presupuestados</div>
+      <div class="p-count">9 items con precio</div>
+    </div>
+    <div class="priority-card">
+      <div class="priority-badge p3-tag">P3 · MEDIO</div>
+      <div class="p-amount" id="p3amt">$3,170</div>
+      <div class="p-label">USD presupuestados</div>
+      <div class="p-count">5 items con precio</div>
+    </div>
+    <div class="priority-card">
+      <div class="priority-badge p4-tag">P4 · BAJO</div>
+      <div class="p-amount" id="p4amt">$7,120</div>
+      <div class="p-label">USD presupuestados</div>
+      <div class="p-count">6 items con precio</div>
+    </div>
+    <div class="priority-card">
+      <div class="priority-badge p5-tag">P5 · CUANDO HAYA</div>
+      <div class="p-amount" id="p5amt">$7,375</div>
+      <div class="p-label">USD presupuestados</div>
+      <div class="p-count">9 items con precio</div>
+    </div>
+  </div>
+
+  <!-- NEXT TO BUY + LOGISTICS -->
+  <div class="two-col">
+    <div class="card">
+      <h3>⚡ Próximos a adquirir (P1)</h3>
+      <div class="next-items" id="nextItems">
+        <div class="next-item">
+          <div class="next-item-left">
+            <span class="prio-tag p1-tag">P1</span>
+            <div><div class="next-item-name">Pack de baterías HV 400v</div><div class="next-item-cat">Eléctrico</div></div>
+          </div>
+          <div class="next-item-price" data-usd="5900">$5,900</div>
+        </div>
+        <div class="next-item">
+          <div class="next-item-left">
+            <span class="prio-tag p1-tag">P1</span>
+            <div><div class="next-item-name">Motor Emrax 228</div><div class="next-item-cat">Eléctrico</div></div>
+          </div>
+          <div class="next-item-price" data-usd="3900">$3,900</div>
+        </div>
+        <div class="next-item">
+          <div class="next-item-left">
+            <span class="prio-tag p1-tag">P1</span>
+            <div><div class="next-item-name">Driver</div><div class="next-item-cat">Eléctrico</div></div>
+          </div>
+          <div class="next-item-price" data-usd="1500">$1,500</div>
+        </div>
+        <div class="next-item">
+          <div class="next-item-left">
+            <span class="prio-tag p1-tag">P1</span>
+            <div><div class="next-item-name">Caños sin costura 1" 4140</div><div class="next-item-cat">Materias Primas</div></div>
+          </div>
+          <div class="next-item-price" data-usd="810">$810</div>
+        </div>
+        <div class="next-item">
+          <div class="next-item-left">
+            <span class="prio-tag p1-tag">P1</span>
+            <div><div class="next-item-name">Cableado eléctrico</div><div class="next-item-cat">Eléctrico</div></div>
+          </div>
+          <div class="next-item-price" data-usd="300">$300</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>✈️ Logística – Brasil 2026</h3>
+      <div style="margin-bottom:14px;">
+        <div class="cat-header" style="margin-bottom:6px;">
+          <span style="font-size:13px;">Total logística</span>
+          <span style="font-size:16px;font-weight:800;color:var(--accent2)" data-usd-log="6960" id="logTotal">$6,960 USD</span>
+        </div>
+        <div class="cat-bar-track" style="height:10px;"><div class="cat-bar-fill" style="width:0%;background:var(--log)" id="logBar"></div></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;" id="logBarLabel">$0 recibido de $6,960</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="next-item">
+          <div class="next-item-left"><span>🚛</span><div><div class="next-item-name">Traslado del auto</div><div class="next-item-cat">Mosquito · 1 viaje</div></div></div>
+          <div class="next-item-price" data-usd="4000">$4,000</div>
+        </div>
+        <div class="next-item">
+          <div class="next-item-left"><span>✈️</span><div><div class="next-item-name">Vuelos San Pablo</div><div class="next-item-cat">Despegar · 8 personas</div></div></div>
+          <div class="next-item-price" data-usd="2800">$2,800</div>
+        </div>
+        <div class="next-item">
+          <div class="next-item-left"><span>🍽️</span><div><div class="next-item-name">Comida por día</div><div class="next-item-cat">8 personas × $20/día</div></div></div>
+          <div class="next-item-price" data-usd="160">$160</div>
+        </div>
+      </div>
+      <div style="margin-top:14px;padding:12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted);">
+        💡 Los vuelos representan el <strong style="color:var(--text)">40%</strong> del presupuesto de logística. Cotizar early para mejores precios.
+      </div>
+    </div>
+  </div>
+
+  <!-- ITEMS TABLE -->
+  <div style="margin-top:28px;">
+    <div class="section-title">Lista completa de componentes</div>
+    <div class="card" style="padding:20px;">
+      <div class="table-controls">
+        <input type="text" class="search-input" placeholder="🔍 Buscar componente..." oninput="filterItems()">
+        <button class="filter-btn active" onclick="setFilter('all', this)">Todos</button>
+        <button class="filter-btn" onclick="setFilter('elec', this)">Eléctrico</button>
+        <button class="filter-btn" onclick="setFilter('mec', this)">Mecánico</button>
+        <button class="filter-btn" onclick="setFilter('mat', this)">Mat. Primas</button>
+        <button class="filter-btn" onclick="setFilter('fia', this)">FIA</button>
+        <button class="filter-btn" onclick="setFilter('herr', this)">Herramientas</button>
+        <button class="filter-btn" onclick="setFilter('log', this)">Logística</button>
+        <button class="filter-btn" onclick="setFilter('acquired', this)">✓ Adquiridos</button>
+      </div>
+      <div style="overflow-x:auto;">
+      <table class="items-table" id="itemsTable">
+        <thead>
+          <tr>
+            <th>✓</th>
+            <th>Componente</th>
+            <th>Categoría</th>
+            <th>Prio.</th>
+            <th>Precio Unit.</th>
+            <th>Cant.</th>
+            <th>Total USD</th>
+            <th>Total ARS</th>
+          </tr>
+        </thead>
+        <tbody id="itemsTbody">
+        </tbody>
+      </table>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:16px;">
+        <span id="sheetsNote">☑ Marcar como adquirido para actualizar el conteo</span>
+        <span id="tableCount" style="margin-left:auto;"></span>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:40px;"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// ► CONFIGURACIÓN — PEGÁ TU SHEET ID AQUÍ ◄
+// ═══════════════════════════════════════════════
+// 1. Importá FSAE_Presupuesto_Template.xlsx a Google Sheets
+// 2. Publicá: Archivo → Compartir → Publicar en la web → Publicar
+// 3. Copiá el ID de la URL: docs.google.com/spreadsheets/d/[ID]/edit
+// 4. Pegalo entre las comillas de abajo:
+const SHEET_ID = '14h9mrK9bvx_E6Bv0eS2AX4rT49iufALmx-lNvAotoUM';
+
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+let FX = 1465; // fallback, se reemplaza con cotización live
+let TOTAL_USD = 54342.21; // se recalcula si se carga desde Sheets
+
+let currency = 'USD';
+let fundedUSD = 0;
+let activeFilter = 'all';
+
+const items = [
+  // AUTO - ELÉCTRICO
+  { name:'Motor Emrax 228', cat:'elec', catLabel:'Eléctrico', prio:1, qty:1, unitUSD:3900, totalUSD:3900, totalARS:5713500 },
+  { name:'Inversor (controlador)', cat:'elec', catLabel:'Eléctrico', prio:1, qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'Pack de baterías HV 400v', cat:'elec', catLabel:'Eléctrico', prio:1, qty:1, unitUSD:5900, totalUSD:5900, totalARS:8643500 },
+  { name:'BMS', cat:'elec', catLabel:'Eléctrico', prio:1, qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'IMD', cat:'elec', catLabel:'Eléctrico', prio:'?', qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'TSMS + Precharge', cat:'elec', catLabel:'Eléctrico', prio:'?', qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'TSAL', cat:'elec', catLabel:'Eléctrico', prio:'?', qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'Cableado eléctrico', cat:'elec', catLabel:'Eléctrico', prio:1, qty:1, unitUSD:300, totalUSD:300, totalARS:439500 },
+  { name:'Dash', cat:'elec', catLabel:'Eléctrico', prio:1, qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'Tablero de comandos', cat:'elec', catLabel:'Eléctrico', prio:1, qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'Driver', cat:'elec', catLabel:'Eléctrico', prio:1, qty:1, unitUSD:1500, totalUSD:1500, totalARS:2197500 },
+  { name:'Telemetría completa', cat:'elec', catLabel:'Eléctrico', prio:4, qty:1, unitUSD:6000, totalUSD:6000, totalARS:8790000 },
+  // LICENCIAS
+  { name:'Licencias varios', cat:'lic', catLabel:'Licencias', prio:5, qty:1, unitUSD:1000, totalUSD:1000, totalARS:1465000 },
+  // AUTO - MECÁNICO
+  { name:'Amortiguadores', cat:'mec', catLabel:'Mecánico', prio:2, qty:4, unitUSD:750, totalUSD:3000, totalARS:4395000 },
+  { name:'Junta universal cardan / columna', cat:'mec', catLabel:'Mecánico', prio:2, qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'Cremallera', cat:'mec', catLabel:'Mecánico', prio:2, qty:1, unitUSD:300, totalUSD:300, totalARS:439500 },
+  { name:'Columna de dirección', cat:'mec', catLabel:'Mecánico', prio:2, qty:1, unitUSD:500, totalUSD:500, totalARS:732500 },
+  { name:'Llantas OZ 13" 4H', cat:'mec', catLabel:'Mecánico', prio:2, qty:4, unitUSD:400, totalUSD:1600, totalARS:2344000 },
+  { name:'Maza', cat:'mec', catLabel:'Mecánico', prio:2, qty:4, unitUSD:250, totalUSD:1000, totalARS:1465000 },
+  { name:'Porta maza', cat:'mec', catLabel:'Mecánico', prio:2, qty:4, unitUSD:250, totalUSD:1000, totalARS:1465000 },
+  { name:'Rodamientos maza/portamaza', cat:'mec', catLabel:'Mecánico', prio:2, qty:1, unitUSD:400, totalUSD:400, totalARS:586000 },
+  { name:'Homocinéticas', cat:'mec', catLabel:'Mecánico', prio:2, qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'Diferencial', cat:'mec', catLabel:'Mecánico', prio:2, qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'Mecanizado de engranajes', cat:'mec', catLabel:'Mecánico', prio:2, qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'Calipers', cat:'mec', catLabel:'Mecánico', prio:3, qty:4, unitUSD:250, totalUSD:1000, totalARS:1465000 },
+  { name:'Discos de freno', cat:'mec', catLabel:'Mecánico', prio:3, qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'Mangueras líquido de freno', cat:'mec', catLabel:'Mecánico', prio:2, qty:2, unitUSD:20, totalUSD:40, totalARS:58600 },
+  { name:'Líquido de freno', cat:'mec', catLabel:'Mecánico', prio:2, qty:2, unitUSD:50, totalUSD:100, totalARS:146500 },
+  { name:'Rótulas', cat:'mec', catLabel:'Mecánico', prio:2, qty:12, unitUSD:20, totalUSD:240, totalARS:351600 },
+  { name:'Porta rosca', cat:'mec', catLabel:'Mecánico', prio:2, qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'Pedalera', cat:'mec', catLabel:'Mecánico', prio:3, qty:1, unitUSD:1500, totalUSD:1500, totalARS:2197500 },
+  { name:'Ackerman', cat:'mec', catLabel:'Mecánico', prio:3, qty:2, unitUSD:50, totalUSD:100, totalARS:146500 },
+  { name:'Volante (con quita y pon)', cat:'mec', catLabel:'Mecánico', prio:3, qty:1, unitUSD:70, totalUSD:70, totalARS:102550 },
+  { name:'Butacas', cat:'mec', catLabel:'Mecánico', prio:3, qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'Cinturones', cat:'mec', catLabel:'Mecánico', prio:4, qty:1, unitUSD:200, totalUSD:200, totalARS:293000 },
+  // MATERIAS PRIMAS
+  { name:'Macizos Aluminio 7075/6061 4.5"', cat:'mat', catLabel:'Mat. Primas', prio:1, qty:70, unitUSD:83.89/70, totalUSD:83.89, totalARS:125840 },
+  { name:'Macizos Acero 1020', cat:'mat', catLabel:'Mat. Primas', prio:null, qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'Caños sin costura 1" 4140 (m)', cat:'mat', catLabel:'Mat. Primas', prio:1, qty:30, unitUSD:27, totalUSD:810, totalARS:1186650 },
+  { name:'Caños sin costura 5/8" 4140', cat:'mat', catLabel:'Mat. Primas', prio:1, qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'Caños práctica 1" 1010 (m)', cat:'mat', catLabel:'Mat. Primas', prio:1, qty:20, unitUSD:13.33, totalUSD:266.6, totalARS:390569 },
+  { name:'Chapa de inox', cat:'mat', catLabel:'Mat. Primas', prio:1, qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'Fibra de carbono', cat:'mat', catLabel:'Mat. Primas', prio:2, qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  { name:'Resina', cat:'mat', catLabel:'Mat. Primas', prio:2, qty:1, unitUSD:0, totalUSD:0, totalARS:0 },
+  // FIA
+  { name:'Inscripción y seguro competencia', cat:'fia', catLabel:'FIA/Seguridad', prio:5, qty:1, unitUSD:2800, totalUSD:2800, totalARS:4102000 },
+  { name:'Atenuador de impacto', cat:'fia', catLabel:'FIA/Seguridad', prio:5, qty:1, unitUSD:150, totalUSD:150, totalARS:219750 },
+  { name:'Casco homologado', cat:'fia', catLabel:'FIA/Seguridad', prio:4, qty:2, unitUSD:300, totalUSD:600, totalARS:879000 },
+  { name:'Mono (traje ignífugo)', cat:'fia', catLabel:'FIA/Seguridad', prio:4, qty:1, unitUSD:460, totalUSD:460, totalARS:673900 },
+  { name:'Arnes de seguridad', cat:'fia', catLabel:'FIA/Seguridad', prio:5, qty:1, unitUSD:110, totalUSD:110, totalARS:161150 },
+  { name:'Balaclava', cat:'fia', catLabel:'FIA/Seguridad', prio:5, qty:1, unitUSD:65, totalUSD:65, totalARS:95225 },
+  { name:'Guantes', cat:'fia', catLabel:'FIA/Seguridad', prio:4, qty:1, unitUSD:100, totalUSD:100, totalARS:146500 },
+  { name:'Botas', cat:'fia', catLabel:'FIA/Seguridad', prio:5, qty:1, unitUSD:170, totalUSD:170, totalARS:249050 },
+  { name:'Cubiertas Slick', cat:'fia', catLabel:'FIA/Seguridad', prio:4, qty:8, unitUSD:720, totalUSD:5760, totalARS:8438400 },
+  { name:'Cubiertas Wet', cat:'fia', catLabel:'FIA/Seguridad', prio:5, qty:4, unitUSD:720, totalUSD:2880, totalARS:4219200 },
+  { name:'Matafuegos', cat:'fia', catLabel:'FIA/Seguridad', prio:5, qty:1, unitUSD:100, totalUSD:100, totalARS:146500 },
+  // HERRAMIENTAS
+  { name:'Insertos Fresa Fabricada (cj 10)', cat:'herr', catLabel:'Herramientas', prio:null, qty:1, unitUSD:44.37, totalUSD:44.37, totalARS:65000 },
+  { name:'Insertos Fresa 16D - Aluminio (cj 10)', cat:'herr', catLabel:'Herramientas', prio:null, qty:1, unitUSD:206.6, totalUSD:206.6, totalARS:302669 },
+  { name:'Insertos Fresa 16D - Acero (cj 10)', cat:'herr', catLabel:'Herramientas', prio:null, qty:1, unitUSD:164.1, totalUSD:164.1, totalARS:240407 },
+  { name:'Fresa plana metal duro 8mm', cat:'herr', catLabel:'Herramientas', prio:null, qty:1, unitUSD:16.72, totalUSD:16.72, totalARS:24500 },
+  { name:'Alesómetro Ruhlmann 35-50mm', cat:'herr', catLabel:'Herramientas', prio:null, qty:1, unitUSD:84.94, totalUSD:84.94, totalARS:124430 },
+  { name:'Refrigerante soluble (20L)', cat:'herr', catLabel:'Herramientas', prio:null, qty:1, unitUSD:108.53, totalUSD:108.53, totalARS:158990 },
+  { name:'Mesa de trabajo', cat:'herr', catLabel:'Herramientas', prio:null, qty:1, unitUSD:1662.80, totalUSD:1662.80, totalARS:2436000 },
+  { name:'Electrodos 6013 conarco', cat:'herr', catLabel:'Herramientas', prio:null, qty:2, unitUSD:27.31, totalUSD:54.61, totalARS:80000 },
+  { name:'Bulonería completa', cat:'herr', catLabel:'Herramientas', prio:null, qty:1, unitUSD:742.32, totalUSD:742.32, totalARS:1087500 },
+  { name:'Thinner 4L', cat:'herr', catLabel:'Herramientas', prio:null, qty:1, unitUSD:15.02, totalUSD:15.02, totalARS:22000 },
+  { name:'Amoladora Argentec 750W', cat:'herr', catLabel:'Herramientas', prio:null, qty:3, unitUSD:40.96, totalUSD:122.87, totalARS:180000 },
+  { name:'Amoladora Recta Argentec 800W', cat:'herr', catLabel:'Herramientas', prio:null, qty:1, unitUSD:131.33, totalUSD:131.33, totalARS:192400 },
+  { name:'Mecha de punteo HSS 6mm', cat:'herr', catLabel:'Herramientas', prio:null, qty:1, unitUSD:22.52, totalUSD:22.52, totalARS:32999 },
+  // LOGÍSTICA
+  { name:'Traslado del auto', cat:'log', catLabel:'Logística', prio:null, qty:1, unitUSD:4000, totalUSD:4000, totalARS:6000000 },
+  { name:'Vuelos San Pablo', cat:'log', catLabel:'Logística', prio:null, qty:8, unitUSD:350, totalUSD:2800, totalARS:4200000 },
+  { name:'Comida por día (8 personas)', cat:'log', catLabel:'Logística', prio:null, qty:8, unitUSD:20, totalUSD:160, totalARS:30000 },
+];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let acquired = new Set();
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+function fmt(usd) {
+  if (currency === 'USD') return '$' + usd.toLocaleString('en-US', {maximumFractionDigits:0});
+  return 'ARS ' + Math.round(usd * FX).toLocaleString('es-AR');
+}
+function fmtFull(usd) {
+  if (currency === 'USD') return '$' + usd.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return 'ARS ' + Math.round(usd * FX).toLocaleString('es-AR');
+}
+
+function setCurrency(c) {
+  currency = c;
+  document.getElementById('btnUSD').classList.toggle('active', c === 'USD');
+  document.getElementById('btnARS').classList.toggle('active', c === 'ARS');
+  document.getElementById('fundUnit').textContent = c;
+  updateFunding();
+  renderTable();
+  updateAmountDisplays();
+  updateMilestoneLabels();
+}
+
+function updateAmountDisplays() {
+  const totalUSD = 54342.21;
+  document.getElementById('statTotal').textContent = fmt(totalUSD);
+  document.getElementById('statTotalSub').textContent = currency === 'USD' ? 'ARS 79,647,879' : '$54,342 USD';
+  document.getElementById('statReceived').textContent = fmt(fundedUSD);
+  document.getElementById('statReceivedSub').textContent = currency === 'USD' ? 'ARS ' + Math.round(fundedUSD * FX).toLocaleString('es-AR') : '$' + fundedUSD.toLocaleString('en-US') + ' USD';
+  document.getElementById('statRemaining').textContent = fmt(Math.max(0, totalUSD - fundedUSD));
+  document.getElementById('statRemainingSub').textContent = currency === 'USD' ? 'ARS ' + Math.round(Math.max(0,totalUSD - fundedUSD) * FX).toLocaleString('es-AR') : '';
+
+  // categories
+  document.getElementById('cAutoAmt').textContent = fmt(44005.49);
+  document.getElementById('cLogAmt').textContent = fmt(6960);
+  document.getElementById('cHerrAmt').textContent = fmt(3376.72);
+  document.getElementById('sElecAmt').textContent = fmt(17600);
+  document.getElementById('sFiaAmt').textContent = fmt(13395);
+  document.getElementById('sMecAmt').textContent = fmt(10850);
+  document.getElementById('sMatAmt').textContent = fmt(1160.49);
+  document.getElementById('sLicAmt').textContent = fmt(1000);
+
+  // logistics total
+  document.getElementById('logTotal').textContent = fmt(6960) + (currency === 'USD' ? ' USD' : '');
+
+  // next items prices
+  document.querySelectorAll('.next-item-price').forEach(el => {
+    const usd = parseFloat(el.dataset.usd);
+    el.textContent = fmt(usd);
+  });
+
+  // priority amounts
+  document.getElementById('p1amt').textContent = fmt(17160.49);
+  document.getElementById('p2amt').textContent = fmt(9180);
+  document.getElementById('p3amt').textContent = fmt(3170);
+  document.getElementById('p4amt').textContent = fmt(7120);
+  document.getElementById('p5amt').textContent = fmt(7375);
+}
+
+function updateMilestoneLabels() {
+  const t = 54342.21;
+  const marks = [0.25, 0.5, 0.75, 1.0];
+  const ids = ['ms25','ms50','ms75','ms100'];
+  marks.forEach((m, i) => {
+    const el = document.getElementById(ids[i]);
+    el.querySelector('.milestone-label').textContent = fmt(t * m);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// FUNDING
+// ═══════════════════════════════════════════════
+let prevMilestone = 0;
+function updateFunding() {
+  let val = parseFloat(document.getElementById('fundInput').value) || 0;
+  if (currency === 'ARS') val = val / FX;
+  fundedUSD = Math.min(val, TOTAL_USD);
+
+  const pct = Math.min(100, (fundedUSD / TOTAL_USD) * 100);
+  document.getElementById('mainBar').style.width = pct + '%';
+  document.getElementById('pctDisplay').textContent = pct.toFixed(1) + '%';
+
+  // milestones
+  const milestones = [25, 50, 75, 100];
+  milestones.forEach((m, i) => {
+    const el = document.getElementById(['ms25','ms50','ms75','ms100'][i]);
+    el.classList.toggle('reached', pct >= m);
+  });
+
+  // milestone toast
+  const reached = milestones.filter(m => pct >= m);
+  const cur = reached.length > 0 ? reached[reached.length - 1] : 0;
+  if (cur > prevMilestone) {
+    showToast(cur === 100 ? '🏆 ¡100% FINANCIADO! ¡El auto está completo!' : `🎯 ¡Hito alcanzado! ${cur}% del presupuesto`);
+    prevMilestone = cur;
+  } else if (cur < prevMilestone) {
+    prevMilestone = cur;
+  }
+
+  // logistics bar
+  const logPct = Math.min(100, (fundedUSD / TOTAL_USD) * 100);
+  document.getElementById('logBar').style.width = logPct + '%';
+  document.getElementById('logBarLabel').textContent = fmt(Math.min(fundedUSD, 6960)) + ' recibido de ' + fmt(6960);
+
+  // ars equiv in input row
+  if (currency === 'USD') {
+    document.getElementById('arsEquiv').textContent = '≈ ARS ' + Math.round(fundedUSD * FX).toLocaleString('es-AR');
+  } else {
+    document.getElementById('arsEquiv').textContent = '≈ USD ' + fundedUSD.toFixed(0);
+  }
+
+  updateAmountDisplays();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ═══════════════════════════════════════════════
+// TABLE
+// ═══════════════════════════════════════════════
+function prioTag(p) {
+  if (p === null || p === undefined) return '<span class="prio-tag pq-tag">—</span>';
+  if (p === '?') return '<span class="prio-tag pq-tag">?</span>';
+  const cls = ['','p1-tag','p2-tag','p3-tag','p4-tag','p5-tag'][p] || 'pq-tag';
+  return `<span class="prio-tag ${cls}">P${p}</span>`;
+}
+function catTag(cat, label) {
+  return `<span class="cat-tag ${cat}-tag">${label}</span>`;
+}
+
+function renderTable() {
+  const tb = document.getElementById('itemsTbody');
+  tb.innerHTML = '';
+  items.forEach((it, i) => {
+    const isAcq = acquired.has(i);
+    const hasPrice = it.totalUSD > 0;
+    const tr = document.createElement('tr');
+    tr.dataset.cat = it.cat;
+    tr.dataset.idx = i;
+    if (isAcq) tr.classList.add('acquired');
+    if (!hasPrice) tr.classList.add('no-price');
+
+    const price = hasPrice ? (currency === 'USD' ? '$' + it.unitUSD.toFixed(2) : 'ARS ' + Math.round(it.unitUSD * FX).toLocaleString('es-AR')) : '<span class="no-price-tag">A cotizar</span>';
+    const total = hasPrice ? fmt(it.totalUSD) : '<span class="no-price-tag">—</span>';
+    const totalARS = hasPrice ? 'ARS ' + it.totalARS.toLocaleString('es-AR') : '<span class="no-price-tag">—</span>';
+
+    tr.innerHTML = `
+      <td><input type="checkbox" class="item-checkbox" ${isAcq ? 'checked' : ''} onchange="toggleAcquired(${i})"></td>
+      <td style="font-weight:${hasPrice?'500':'400'}">${it.name}</td>
+      <td>${catTag(it.cat, it.catLabel)}</td>
+      <td>${prioTag(it.prio)}</td>
+      <td>${price}</td>
+      <td style="color:var(--muted)">${it.qty}</td>
+      <td style="font-weight:600;color:${hasPrice?'var(--accent2)':'var(--muted)'}">${total}</td>
+      <td style="color:var(--muted);font-size:12px">${currency === 'USD' ? (hasPrice ? 'ARS ' + it.totalARS.toLocaleString('es-AR') : '—') : (hasPrice ? '$' + it.totalUSD.toFixed(2) + ' USD' : '—')}</td>
+    `;
+    tb.appendChild(tr);
+  });
+  applyFilters();
+}
+
+function toggleAcquired(idx) {
+  if (acquired.has(idx)) acquired.delete(idx);
+  else acquired.add(idx);
+  const count = acquired.size;
+  document.getElementById('statAcquired').textContent = count + ' / 47';
+  document.getElementById('statAcquiredSub').textContent = Math.round(count / 47 * 100) + '% de componentes';
+  renderTable();
+}
+
+let searchVal = '';
+function filterItems() {
+  searchVal = document.querySelector('.search-input').value.toLowerCase();
+  applyFilters();
+}
+
+function setFilter(cat, btn) {
+  activeFilter = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+
+function applyFilters() {
+  const rows = document.querySelectorAll('#itemsTbody tr');
+  let visible = 0;
+  rows.forEach(tr => {
+    const cat = tr.dataset.cat;
+    const idx = parseInt(tr.dataset.idx);
+    const name = tr.querySelector('td:nth-child(2)').textContent.toLowerCase();
+    const matchCat = activeFilter === 'all' || cat === activeFilter || (activeFilter === 'acquired' && acquired.has(idx));
+    const matchSearch = name.includes(searchVal);
+    const show = matchCat && matchSearch;
+    tr.classList.toggle('hidden', !show);
+    if (show) visible++;
+  });
+  document.getElementById('tableCount').textContent = visible + ' items visibles';
+}
+
+// ═══════════════════════════════════════════════
+// DONUT CHART
+// ═══════════════════════════════════════════════
+function initChart() {
+  const ctx = document.getElementById('donutChart').getContext('2d');
+  const data = [
+    { label: 'Eléctrico', value: 17600, color: '#3b82f6' },
+    { label: 'FIA/Seguridad', value: 13395, color: '#8b5cf6' },
+    { label: 'Mecánico', value: 10850, color: '#10b981' },
+    { label: 'Logística', value: 6960, color: '#f97316' },
+    { label: 'Herramientas', value: 3376.72, color: '#06b6d4' },
+    { label: 'Mat. Primas', value: 1160.49, color: '#f59e0b' },
+    { label: 'Licencias', value: 1000, color: '#ec4899' },
+  ];
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: data.map(d => d.label),
+      datasets: [{
+        data: data.map(d => d.value),
+        backgroundColor: data.map(d => d.color),
+        borderColor: '#161b24',
+        borderWidth: 3,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      cutout: '68%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` $${ctx.parsed.toLocaleString('en-US', {maximumFractionDigits:0})} USD (${(ctx.parsed / TOTAL_USD * 100).toFixed(1)}%)`
+          }
+        }
+      }
+    }
+  });
+
+  const legend = document.getElementById('donutLegend');
+  data.forEach(d => {
+    const pct = (d.value / TOTAL_USD * 100).toFixed(1);
+    legend.innerHTML += `
+      <div class="legend-item">
+        <div class="legend-left"><div class="legend-dot" style="background:${d.color}"></div><span class="legend-label">${d.label}</span></div>
+        <span class="legend-value">$${d.value.toLocaleString('en-US', {maximumFractionDigits:0})} · ${pct}%</span>
+      </div>`;
+  });
+}
+
+// ═══════════════════════════════════════════════
+// LIVE FX — múltiples fuentes con fallback
+// ═══════════════════════════════════════════════
+
+// Intenta parsear el JSON de dolarapi sin importar el origen de la respuesta
+function parseDolarapi(data) {
+  const venta = data.venta ?? data.compra;
+  if (!venta) throw new Error('Sin dato');
+  return { rate: Math.round(venta), fecha: data.fechaActualizacion || null };
+}
+
+// Fuentes en orden de prioridad
+const FX_SOURCES = [
+  // 1) Directo (funciona si el servidor tiene CORS permisivo)
+  async () => {
+    const r = await fetch('https://dolarapi.com/v1/dolares/oficial', { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return parseDolarapi(await r.json());
+  },
+  // 2) Proxy CORS allorigins (siempre funciona desde archivo local)
+  async () => {
+    const url = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://dolarapi.com/v1/dolares/oficial');
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return parseDolarapi(await r.json());
+  },
+  // 3) Bluelytics (API alternativa, también oficial BCRA)
+  async () => {
+    const r = await fetch('https://api.bluelytics.com.ar/v2/latest', { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const rate = Math.round(d.oficial?.value_sell ?? d.oficial?.value_avg);
+    if (!rate) throw new Error('Sin dato');
+    return { rate, fecha: d.last_update || null };
+  },
+  // 4) Proxy allorigins → bluelytics
+  async () => {
+    const url = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.bluelytics.com.ar/v2/latest');
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const rate = Math.round(d.oficial?.value_sell ?? d.oficial?.value_avg);
+    if (!rate) throw new Error('Sin dato');
+    return { rate, fecha: d.last_update || null };
+  },
+];
+
+async function fetchFX() {
+  const dot = document.getElementById('fxDot');
+  const label = document.getElementById('fxLabel');
+
+  for (const source of FX_SOURCES) {
+    try {
+      const { rate, fecha } = await source();
+      FX = rate;
+
+      let fechaStr = '';
+      if (fecha) {
+        const d = new Date(fecha);
+        if (!isNaN(d)) {
+          fechaStr = ' · ' + d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit' }) +
+                     ' ' + d.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
+        }
+      }
+
+      dot.classList.add('live'); dot.classList.remove('error');
+      label.style.color = 'var(--text)';
+      label.innerHTML = `<strong>USD = ARS ${FX.toLocaleString('es-AR')}</strong> <span style="color:var(--muted);font-size:11px">Oficial${fechaStr}</span>`;
+
+      document.querySelectorAll('[data-fx-label]').forEach(el => {
+        el.textContent = '1 USD = ARS ' + FX.toLocaleString('es-AR');
+      });
+
+      updateAmountDisplays();
+      updateMilestoneLabels();
+      renderTable();
+      return; // éxito, salir
+    } catch (_) {
+      // siguiente fuente
+    }
+  }
+
+  // Todas las fuentes fallaron
+  dot.classList.add('error'); dot.classList.remove('live');
+  label.style.color = 'var(--muted)';
+  label.innerHTML = `USD = ARS ${FX.toLocaleString('es-AR')} <span style="font-size:10px">(sin conexión)</span>`;
+}
+
+// ═══════════════════════════════════════════════
+// GOOGLE SHEETS — carga datos dinámicos
+// ═══════════════════════════════════════════════
+
+// Parsea la respuesta gviz (JSON envuelto en google.visualization.Query.setResponse(...))
+function parseGviz(text) {
+  const json = text.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, '');
+  return JSON.parse(json);
+}
+
+// Convierte una fila gviz a array de valores primitivos
+function gvizRow(row) {
+  return row.c.map(cell => (cell && cell.v !== undefined ? cell.v : null));
+}
+
+async function fetchSheets() {
+  if (!SHEET_ID || SHEET_ID.trim() === '') return; // sin ID configurado
+
+  const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+
+  try {
+    // ── 1. Config sheet ──────────────────────────────────────────────────
+    const cfgRes = await fetch(`${base}&sheet=Config`, { cache: 'no-store' });
+    const cfgData = parseGviz(await cfgRes.text());
+    let fondosUSD = 0, fxManual = null;
+    cfgData.table.rows.forEach(row => {
+      const [param, val] = gvizRow(row);
+      if (!param) return;
+      const k = String(param).trim().toLowerCase();
+      if (k === 'fondos_recibidos' && val !== null && val !== '') fondosUSD = parseFloat(val) || 0;
+      if (k === 'fx_manual' && val !== null && val !== '')         fxManual  = parseFloat(val) || null;
+    });
+
+    // Aplicar FX manual si está configurado
+    if (fxManual && fxManual > 0) {
+      FX = fxManual;
+      document.getElementById('fxDot').classList.remove('live','error');
+      document.getElementById('fxDot').style.background = '#f5a623';
+      document.getElementById('fxLabel').innerHTML =
+        `<strong>USD = ARS ${FX.toLocaleString('es-AR')}</strong> <span style="color:var(--muted);font-size:11px">Manual (Config)</span>`;
+      document.querySelectorAll('[data-fx-label]').forEach(el => {
+        el.textContent = '1 USD = ARS ' + FX.toLocaleString('es-AR');
+      });
+    }
+
+    // Aplicar fondos recibidos al input
+    fundedUSD = fondosUSD;
+    const inputEl = document.getElementById('fundInput');
+    inputEl.value = currency === 'USD' ? fondosUSD : Math.round(fondosUSD * FX);
+
+    // ── 2. Items sheet ───────────────────────────────────────────────────
+    const itmRes = await fetch(`${base}&sheet=Items`, { cache: 'no-store' });
+    const itmData = parseGviz(await itmRes.text());
+    const rows = itmData.table.rows;
+
+    // Columnas: 0=Nombre 1=Categoría(cod) 2=Etiqueta 3=Prioridad 4=Cantidad
+    //           5=PrecioUnit 6=TotalUSD 7=Adquirido 8=Notas
+    const newItems = [];
+    acquired.clear();
+    rows.forEach((row, idx) => {
+      const [name, cat, catLabel, prio, qty, unitUSD, totalUSD, adquirido, notes] = gvizRow(row);
+      if (!name || name === 'Nombre') return; // skip header/empty
+      const tUSD = parseFloat(totalUSD) || 0;
+      newItems.push({
+        name:     String(name),
+        cat:      String(cat || 'herr').toLowerCase(),
+        catLabel: String(catLabel || ''),
+        prio:     prio !== null ? prio : null,
+        qty:      qty || 1,
+        unitUSD:  parseFloat(unitUSD) || 0,
+        totalUSD: tUSD,
+        totalARS: Math.round(tUSD * FX),
+      });
+      if (adquirido === true || adquirido === 'TRUE') acquired.add(newItems.length - 1);
+    });
+
+    if (newItems.length > 0) {
+      items.length = 0;
+      newItems.forEach(it => items.push(it));
+      TOTAL_USD = items.reduce((s, it) => s + it.totalUSD, 0);
+
+      // badge indicando que los datos vienen de Sheets
+      document.getElementById('sheetsNote').innerHTML =
+        '🟢 Datos cargados desde Google Sheets · ' +
+        `<a href="https://docs.google.com/spreadsheets/d/${SHEET_ID}" target="_blank" ` +
+        'style="color:var(--accent2);text-decoration:none;">Editar planilla ↗</a>';
+    }
+
+    updateFunding();
+    updateAmountDisplays();
+    updateMilestoneLabels();
+    renderTable();
+
+  } catch (e) {
+    console.warn('Google Sheets fetch failed:', e);
+    // Silently fall back to hardcoded data
+  }
+}
+
+// ═══════════════════════════════════════════════
+// STARTUP
+// ═══════════════════════════════════════════════
+renderTable();
+initChart();
+updateAmountDisplays();
+updateMilestoneLabels();
+document.getElementById('tableCount').textContent = items.length + ' items visibles';
+fetchFX();                              // cotización live
+fetchSheets();                          // datos desde Google Sheets (si hay SHEET_ID)
+setInterval(fetchFX, 5 * 60 * 1000);   // refresca FX cada 5 min
+setInterval(fetchSheets, 2 * 60 * 1000); // refresca Sheets cada 2 min
+</script>
+</body>
+</html>
